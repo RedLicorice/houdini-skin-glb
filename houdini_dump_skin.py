@@ -38,7 +38,8 @@ def dump_skin_data(mesh_sop, skel_sop, out_json, name, texture=""):
 
     joints, jindex = [], {}
     for p in gs.points():
-        m3 = [float(v) for v in p.attribValue("transform").asTuple()]
+        tv = p.attribValue("transform")
+        m3 = [float(v) for v in (tv.asTuple() if hasattr(tv, "asTuple") else tv)]
         pos = p.position()
         m = [[m3[0], m3[1], m3[2], pos.x()],
              [m3[3], m3[4], m3[5], pos.y()],
@@ -53,7 +54,10 @@ def dump_skin_data(mesh_sop, skel_sop, out_json, name, texture=""):
             parent = vs[0].point().attribValue("name")
             joints[jindex[child]]["parent"] = parent
 
-    paths = list(g.attribValue("boneCapture_pCaptPath"))
+    pa = g.findGlobalAttrib("boneCapture_pCaptPath")
+    if pa is None:
+        raise RuntimeError("boneCapture_pCaptPath missing: run the dump on a Capture Attribute Unpack node")
+    paths = list(g.attribValue(pa))
 
     def joint_of(path):
         path = str(path)
